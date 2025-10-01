@@ -52,3 +52,17 @@ func GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 	json.NewEncoder(w).Encode(book)
 }
+
+func SearchHendler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+
+	books, err := myRepo.Search(query)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Books not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-type", "application/json")
+	json.NewEncoder(w).Encode(books)
+}

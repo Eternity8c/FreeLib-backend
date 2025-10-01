@@ -64,4 +64,19 @@ func (m *MockBookRepo) GetByID(id uint) (*models.Book, error) {
 		}
 	}
 	return nil, errors.New("Не найден нужный ID")
-} 
+}
+
+func (m *MockBookRepo) Search(query string) ([]models.Book, error) {
+	var books []models.Book
+	for i := 0; i < len(mockBooks); i++ {
+		if mockBooks[i].Author == query || mockBooks[i].Title == query {
+			books = append(books, mockBooks[i])
+		}
+	}
+
+	if len(books) == 0 {
+		return nil, errors.New("Не удалось найти книгу по заданным параметрам")
+	}
+
+	return books, nil
+}
