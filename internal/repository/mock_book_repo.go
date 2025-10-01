@@ -6,9 +6,7 @@ import (
 	"time"
 )
 
-type MockBookRepo struct {
-	count uint
-}
+type MockBookRepo struct {}
 
 var mockBooks = []models.Book {
 	{
@@ -55,17 +53,15 @@ var mockBooks = []models.Book {
 	},
 }
 
-var myMock = &MockBookRepo{
-	count: 6,
-}
-
 func (m *MockBookRepo) GetAll() ([]models.Book, error) {
 	return mockBooks ,nil
 }
 
 func (m *MockBookRepo) GetByID(id uint) (*models.Book, error) {
-	if m.count > id {
-		return nil, errors.New("Не найден нужный ID")
+	for i := 0; i < len(mockBooks); i++ {
+		if mockBooks[i].ID == id {
+			return &mockBooks[i], nil
+		}
 	}
-	return &mockBooks[id-1], nil
+	return nil, errors.New("Не найден нужный ID")
 } 

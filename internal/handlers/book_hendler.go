@@ -36,6 +36,8 @@ func GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 	idUint, err := strconv.Atoi(idStr)
 	if err != nil {
 		log.Println(err)
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
 	}
 
 	log.Println(uint(idUint))
@@ -43,6 +45,8 @@ func GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 	
 	if err != nil {
 		log.Println(err)
+		http.Error(w, "Book not found", http.StatusNotFound)
+		return
 	}
 
 	w.Header().Set("Content-type", "application/json")
