@@ -4,14 +4,18 @@ import (
 	"FreeLib/internal/handlers"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	http.HandleFunc("/api/health", handlers.HealthHandler)
-	http.HandleFunc("/api/books", handlers.GetBooksHandler)
-	http.HandleFunc("/api/book", handlers.GetByIDHandler)
-	http.HandleFunc("/api/search", handlers.SearchHendler)
-	http.HandleFunc("/api/create", handlers.CreateHeandler)
+	r := mux.NewRouter()
+	r.HandleFunc("/api/health", handlers.HealthHandler).Methods("GET")
+	r.HandleFunc("/api/books", handlers.GetBooksHandler).Methods("GET")
+	r.HandleFunc("/api/book", handlers.GetByIDHandler).Methods("GET")
+	r.HandleFunc("/api/search", handlers.SearchHandler).Methods("GET")
+	r.HandleFunc("/api/create", handlers.CreateHandler).Methods("POST")
+	r.HandleFunc("/api/books", handlers.DeleteHandler).Methods("DELETE")
 	log.Println("FreeLib server sterting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }

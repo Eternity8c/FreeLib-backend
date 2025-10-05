@@ -54,7 +54,7 @@ func GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(book)
 }
 
-func SearchHendler(w http.ResponseWriter, r *http.Request) {
+func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 
 	books, err := myRepo.Search(query)
@@ -68,7 +68,7 @@ func SearchHendler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(books)
 }
 
-func CreateHeandler(w http.ResponseWriter, r *http.Request) {
+func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -88,4 +88,27 @@ func CreateHeandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(book)
+}
+
+func DeleteHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	strID := r.URL.Query().Get("id")
+	intId, err := strconv.Atoi(strID)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := myRepo.Delete(uint(intId)); err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

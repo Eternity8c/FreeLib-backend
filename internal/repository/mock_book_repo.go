@@ -100,3 +100,13 @@ func (m *MockBookRepo) Create(book *models.Book) error {
 	mockBooks = append(mockBooks, *book)
 	return nil
 }
+
+func (m *MockBookRepo) Delete(id uint) error {
+	for i := 0; i < len(mockBooks); i++ {
+		if id == mockBooks[i].ID {
+			mockBooks = append(mockBooks[:i], mockBooks[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("ID не найден")
+}
