@@ -80,3 +80,23 @@ func (m *MockBookRepo) Search(query string) ([]models.Book, error) {
 
 	return books, nil
 }
+
+
+func (m *MockBookRepo) Create(book *models.Book) error {
+	maxID := uint(0);
+	for _, b := range mockBooks {
+		if b.ID > maxID {
+			maxID = b.ID
+		}
+	}
+	for i := 0; i < len(mockBooks); i++ {
+		if mockBooks[i].Author == book.Author && 
+		mockBooks[i].Title == book.Title {
+			return errors.New("Такая книга уже есть")
+		}
+	}
+	book.ID = maxID + 1
+	book.CreatedAt = time.Now()
+	mockBooks = append(mockBooks, *book)
+	return nil
+}
