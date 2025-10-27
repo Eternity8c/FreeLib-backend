@@ -7,4 +7,5 @@ type BookReposytory interface {
 	GetByID(id uint) (*models.Book, error)
 	Create(book *models.Book) error
 	Search(query string) ([]models.Book, error)
+	Delete(id uint) error
 }
