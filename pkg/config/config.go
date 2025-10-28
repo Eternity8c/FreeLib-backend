@@ -1,7 +1,5 @@
 package config
 
-import "github.com/spf13/viper"
-
 type Config struct {
 	Host        string
 	Port        string
@@ -22,10 +20,4 @@ func LoadConfig() Config {
 		SSLMode:     "disable",
 		MaxAttempts: 5,
 	}
-}
-
-func InitConfig() error {
-	viper.AddConfigPath("configs")
-	viper.SetConfigName("config")
-	return viper.ReadInConfig()
 }

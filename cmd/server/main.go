@@ -13,8 +13,7 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
-	 ctx := context.Background()
-	log.Println(cfg)
+	ctx := context.Background()
 	pool, err := database.ConnectDB(ctx, cfg)
 	if err != nil {
 		log.Fatal(err)
