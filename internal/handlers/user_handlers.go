@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"FreeLib/internal/models"
-	"FreeLib/internal/repository"
+	"FreeLib/internal/repository/mock"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var userRepo = repository.NewMockUserRepository()
+var userRepo = mock.NewMockUserRepository()
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisteRequest

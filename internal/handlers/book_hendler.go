@@ -9,9 +9,17 @@ import (
 	"strconv"
 )
 
-var myRepo = &repository.MockBookRepo{}
+type BookHandler struct {
+	repo repository.BookRepository
+}
 
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
+func NewBookhandler(repo repository.BookRepository) *BookHandler {
+	return &BookHandler{
+		repo: repo,
+	}
+}
+
+func (h *BookHandler) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string {
 		"status": "ok",
@@ -21,8 +29,8 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetBooksHandler(w http.ResponseWriter, r *http.Request) {
-	books, err := myRepo.GetAll()
+func (h *BookHandler) GetBooksHandler(w http.ResponseWriter, r *http.Request) {
+	books, err := h.repo.GetAll()
 	if err != nil {
 		log.Println(err)
 	}
@@ -31,7 +39,7 @@ func GetBooksHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(books)
 }
 
-func GetByIDHandler(w http.ResponseWriter, r *http.Request) {
+func (h *BookHandler) GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 
 	idUint, err := strconv.Atoi(idStr)
@@ -42,7 +50,7 @@ func GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println(uint(idUint))
-	book, err := myRepo.GetByID(uint(idUint))
+	book, err := h.repo.GetByID(uint(idUint))
 	
 	if err != nil {
 		log.Println(err)
@@ -54,10 +62,10 @@ func GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(book)
 }
 
-func SearchHandler(w http.ResponseWriter, r *http.Request) {
+func (h *BookHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 
-	books, err := myRepo.Search(query)
+	books, err := h.repo.Search(query)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Books not found", http.StatusNotFound)
@@ -68,7 +76,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(books)
 }
 
-func CreateHandler(w http.ResponseWriter, r *http.Request) {
+func (h *BookHandler) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	var book models.Book
 	err := json.NewDecoder(r.Body).Decode(&book)
 	if err != nil {
@@ -77,7 +85,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := myRepo.Create(&book); err != nil {
+	if err := h.repo.Create(&book); err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -86,7 +94,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(book)
 }
 
-func DeleteHandler(w http.ResponseWriter, r *http.Request) {
+func (h *BookHandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	strID := r.URL.Query().Get("id")
 	intId, err := strconv.Atoi(strID)
 	if err != nil {
@@ -95,7 +103,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := myRepo.Delete(uint(intId)); err != nil {
+	if err := h.repo.Delete(uint(intId)); err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
