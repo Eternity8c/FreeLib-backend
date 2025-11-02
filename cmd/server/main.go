@@ -24,17 +24,25 @@ func main() {
 	
 	bookRepo := postgres.NewBookRepository(pool)
 
-	bookHandler := handlers.NewBookhandler(bookRepo)
+	bookHandler := handlers.NewBookHandler(bookRepo)
+
+	userRepo := postgres.NewUserRepository(pool)
+
+	userHandler := handlers.NewUserHandler(userRepo)
 
 	r := mux.NewRouter()
+
+	//Books Handlers
 	r.HandleFunc("/api/health", bookHandler.HealthHandler).Methods("GET")
 	r.HandleFunc("/api/books", bookHandler.GetBooksHandler).Methods("GET")
 	r.HandleFunc("/api/book", bookHandler.GetByIDHandler).Methods("GET")
 	r.HandleFunc("/api/search", bookHandler.SearchHandler).Methods("GET")
 	r.HandleFunc("/api/create", bookHandler.CreateHandler).Methods("POST")
-	r.HandleFunc("/api/books", bookHandler.DeleteHandler).Methods("DELETE")
+	r.HandleFunc("/api/book", bookHandler.DeleteHandler).Methods("DELETE")
 
-	r.HandleFunc("/api/register", handlers.RegisterHandler).Methods("POST")
+	//User Handlers
+	r.HandleFunc("/api/register", userHandler.RegisterHandler).Methods("POST")
+	r.HandleFunc("/api/auntificate", userHandler.AuntificationHandler).Methods("GET")
 
 	log.Println("FreeLib server sterting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

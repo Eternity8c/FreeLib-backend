@@ -13,7 +13,7 @@ type BookHandler struct {
 	repo repository.BookRepository
 }
 
-func NewBookhandler(repo repository.BookRepository) *BookHandler {
+func NewBookHandler(repo repository.BookRepository) *BookHandler {
 	return &BookHandler{
 		repo: repo,
 	}

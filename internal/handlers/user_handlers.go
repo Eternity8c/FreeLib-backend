@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"FreeLib/internal/models"
-	"FreeLib/internal/repository/mock"
+	"FreeLib/internal/repository"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,9 +10,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var userRepo = mock.NewMockUserRepository()
+type UserHandler struct {
+	repo repository.UserRepository
+}
 
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func NewUserHandler(repo repository.UserRepository) *UserHandler {
+	return &UserHandler{
+		repo: repo,
+ 	}
+}
+
+func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisteRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -33,7 +41,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: string(passwordHash),
 	}
 
-	err = userRepo.CreateUser(&user)
+	err = h.repo.CreateUser(&user)
 	if err != nil {
 		log.Println("Create user error:", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -46,5 +54,33 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		"username": user.Username,
 		"email": user.Email,
 		"message": "User registred successfully",
+	})
+}
+
+func (h *UserHandler) AuntificationHandler(w http.ResponseWriter, r *http.Request) {
+	var req models.LoginRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		log.Println("Invalid JSON: ", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.repo.AuntificationUser(&req)
+	if err != nil {
+		log.Println("Create user error:", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"user": map[string]interface{}{
+			"id": user.ID,
+			"username": user.Username,
+			"email": user.Email,
+		},
 	})
 }
