@@ -42,8 +42,28 @@ func main() {
 
 	//User Handlers
 	r.HandleFunc("/api/register", userHandler.RegisterHandler).Methods("POST")
-	r.HandleFunc("/api/auntificate", userHandler.AuntificationHandler).Methods("GET")
+	r.HandleFunc("/api/login", userHandler.AuntificationHandler).Methods("GET")
 
-	log.Println("FreeLib server sterting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	r.HandleFunc("/api/users", userHandler.RegisterHandler).Methods("POST")   // фронтенд ожидает POST /users
+	r.HandleFunc("/api/login", userHandler.AuntificationHandler).Methods("POST") // фронтенд пытается POST /login
+
+	// Наконец, оборачиваем маршрутизатор CORS-ом
+	handler := withCORS(r)
+
+	log.Println("FreeLib server starting on :8080")
+	log.Fatal(http.ListenAndServe(":8080", handler))
+
+}
+
+func withCORS(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+    w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    if r.Method == http.MethodOptions {
+      w.WriteHeader(http.StatusOK)
+      return
+    }
+    next.ServeHTTP(w, r)
+  })
 }
