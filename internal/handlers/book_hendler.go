@@ -3,10 +3,14 @@ package handlers
 import (
 	"FreeLib/internal/models"
 	"FreeLib/internal/repository"
+	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type BookHandler struct {
@@ -110,4 +114,105 @@ func (h *BookHandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    idStr := vars["id"]
+
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        log.Println(err)
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+
+    book, err := h.repo.GetByID(uint(id))
+    if err != nil {
+        log.Println("get by id failed:", err)
+        http.Error(w, "Book not found", http.StatusNotFound)
+        return
+    }
+
+    type partialReq struct {
+        Title       *string `json:"title"`
+        Author      *string `json:"author"`
+        Description *string `json:"description"`
+        Genre       *string `json:"genre"`
+        Content     *string `json:"content"`
+        CoverURL    *string `json:"coverUrl"`    // default expected name
+        PublishYear *int    `json:"publishYear"`
+    }
+
+    // Read body bytes so we can decode to map and to struct
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        log.Println("read body:", err)
+        http.Error(w, "Invalid request", http.StatusBadRequest)
+        return
+    }
+    // restore body if needed later
+    r.Body = io.NopCloser(bytes.NewReader(body))
+
+    // Debug log to see actual incoming payload (optional)
+    log.Printf("PATCH /api/book/%d body: %s\n", id, string(body))
+
+    // decode into map to handle alternative key names
+    var rawMap map[string]interface{}
+    if err := json.Unmarshal(body, &rawMap); err != nil {
+        rawMap = map[string]interface{}{}
+    }
+
+    // decode into struct with pointer fields
+    var req partialReq
+    if err := json.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
+        log.Println("decode body to struct:", err)
+        http.Error(w, "Invalid JSON", http.StatusBadRequest)
+        return
+    }
+
+    // If cover not supplied in camelCase `coverUrl`, try snake_case or capitalized variant
+    if req.CoverURL == nil {
+        if v, ok := rawMap["cover_url"]; ok {
+            if s, ok2 := v.(string); ok2 {
+                req.CoverURL = &s
+            }
+        } else if v, ok := rawMap["coverURL"]; ok {
+            if s, ok2 := v.(string); ok2 {
+                req.CoverURL = &s
+            }
+        }
+    }
+
+    // Apply only provided fields
+    if req.Title != nil {
+        book.Title = *req.Title
+    }
+    if req.Author != nil {
+        book.Author = *req.Author
+    }
+    if req.Description != nil {
+        book.Description = *req.Description
+    }
+    if req.Genre != nil {
+        book.Genre = *req.Genre
+    }
+    if req.Content != nil {
+        book.Content = *req.Content
+    }
+    if req.CoverURL != nil {
+        book.CoverURL = *req.CoverURL
+    }
+
+    if err := h.repo.Update(book); err != nil {
+        log.Println("update failed:", err)
+        http.Error(w, "Failed to update book", http.StatusInternalServerError)
+        return
+    }
+
+    // Return updated full object to frontend (helps UI update immediately)
+    w.Header().Set("Content-Type", "application/json")
+    if err := json.NewEncoder(w).Encode(book); err != nil {
+        log.Println("encode response err:", err)
+    }
 }

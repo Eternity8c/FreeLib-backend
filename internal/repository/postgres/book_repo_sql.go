@@ -147,3 +147,29 @@ func (r *bookRepository) Delete(id uint) error {
 
 	return nil
 }
+
+func (r *bookRepository) Update(book *models.Book) error {
+	query := `UPDATE books
+	SET title = $1, author = $2, description = $3, genre = $4, content = $5, cover_url = $6
+	WHERE id = $7`
+	
+	result, err := r.pool.Exec(context.Background(), query, 
+	book.Title,
+	book.Author,
+	book.Description,
+	book.Genre,
+	book.Content,
+	book.CoverURL,
+	book.ID)
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+    	return fmt.Errorf("book with id %d not found", book.ID)
+	}
+
+	return nil
+}

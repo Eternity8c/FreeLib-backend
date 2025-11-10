@@ -81,6 +81,7 @@ func (h *UserHandler) AuntificationHandler(w http.ResponseWriter, r *http.Reques
 			"id": user.ID,
 			"username": user.Username,
 			"email": user.Email,
+			"isAdmin": user.IsAdmin,
 		},
 	})
 }

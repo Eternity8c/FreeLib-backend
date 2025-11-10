@@ -39,13 +39,11 @@ func main() {
 	r.HandleFunc("/api/search", bookHandler.SearchHandler).Methods("GET")
 	r.HandleFunc("/api/create", bookHandler.CreateHandler).Methods("POST")
 	r.HandleFunc("/api/book", bookHandler.DeleteHandler).Methods("DELETE")
+	r.HandleFunc("/api/book/{id}", bookHandler.UpdateBookHandler).Methods("PATCH")
 
 	//User Handlers
 	r.HandleFunc("/api/register", userHandler.RegisterHandler).Methods("POST")
-	r.HandleFunc("/api/login", userHandler.AuntificationHandler).Methods("GET")
-
-	r.HandleFunc("/api/users", userHandler.RegisterHandler).Methods("POST")   // фронтенд ожидает POST /users
-	r.HandleFunc("/api/login", userHandler.AuntificationHandler).Methods("POST") // фронтенд пытается POST /login
+	r.HandleFunc("/api/login", userHandler.AuntificationHandler).Methods("POST")
 
 	// Наконец, оборачиваем маршрутизатор CORS-ом
 	handler := withCORS(r)

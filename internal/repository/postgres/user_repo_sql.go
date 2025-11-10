@@ -38,10 +38,12 @@ func (r *userRepository) CreateUser(user *models.User) error {
 }
 
 func (r *userRepository) AuntificationUser(lr *models.LoginRequest) (*models.User, error) {
-	query := `SELECT id, username, email, password_hash FROM users
+	query := `SELECT id, username, email, is_admin, password_hash FROM users
 	WHERE email = $1`
 	var user models.User
-	err := r.pool.QueryRow(context.Background(), query, lr.Email).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash)
+	err := r.pool.QueryRow(context.Background(), query, lr.Email).Scan(
+		&user.ID, &user.Username, &user.Email,
+		&user.IsAdmin, &user.PasswordHash)
 	if err != nil {
 		return nil, err
 	}
