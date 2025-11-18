@@ -9,4 +9,7 @@ type BookRepository interface {
 	Search(query string) ([]models.Book, error)
 	Delete(id uint) error
 	Update(book *models.Book) error
+	AddFavorite(userID uint, bookID uint) error
+	DeleteFavorite(userID uint, bookID uint) error
+	GetAllFavorite(userID uint) ([]models.Book, error)
 }

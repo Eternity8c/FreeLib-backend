@@ -40,7 +40,10 @@ func main() {
 	r.HandleFunc("/api/create", bookHandler.CreateHandler).Methods("POST")
 	r.HandleFunc("/api/book", bookHandler.DeleteHandler).Methods("DELETE")
 	r.HandleFunc("/api/book/{id}", bookHandler.UpdateBookHandler).Methods("PATCH")
-
+	r.HandleFunc("/api/users/{id}/favorites", bookHandler.AddFavoriteHandler).Methods("POST")
+	r.HandleFunc("/api/users/{user_id}/favorites/book/{book_id}", bookHandler.DeleteFavoriteHandler).Methods("DELETE")
+	r.HandleFunc("/api/users/{user_id}/favorites", bookHandler.GetAllFavotiteHandler).Methods("GET")
+	
 	//User Handlers
 	r.HandleFunc("/api/register", userHandler.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/login", userHandler.AuntificationHandler).Methods("POST")

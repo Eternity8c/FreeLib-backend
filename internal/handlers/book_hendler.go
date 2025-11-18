@@ -140,30 +140,28 @@ func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) 
         Description *string `json:"description"`
         Genre       *string `json:"genre"`
         Content     *string `json:"content"`
-        CoverURL    *string `json:"coverUrl"`    // default expected name
+        CoverURL    *string `json:"coverUrl"`
         PublishYear *int    `json:"publishYear"`
     }
 
-    // Read body bytes so we can decode to map and to struct
     body, err := io.ReadAll(r.Body)
     if err != nil {
         log.Println("read body:", err)
         http.Error(w, "Invalid request", http.StatusBadRequest)
         return
     }
-    // restore body if needed later
+
     r.Body = io.NopCloser(bytes.NewReader(body))
 
-    // Debug log to see actual incoming payload (optional)
+
     log.Printf("PATCH /api/book/%d body: %s\n", id, string(body))
 
-    // decode into map to handle alternative key names
+
     var rawMap map[string]interface{}
     if err := json.Unmarshal(body, &rawMap); err != nil {
         rawMap = map[string]interface{}{}
     }
 
-    // decode into struct with pointer fields
     var req partialReq
     if err := json.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
         log.Println("decode body to struct:", err)
@@ -171,7 +169,6 @@ func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) 
         return
     }
 
-    // If cover not supplied in camelCase `coverUrl`, try snake_case or capitalized variant
     if req.CoverURL == nil {
         if v, ok := rawMap["cover_url"]; ok {
             if s, ok2 := v.(string); ok2 {
@@ -184,7 +181,6 @@ func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) 
         }
     }
 
-    // Apply only provided fields
     if req.Title != nil {
         book.Title = *req.Title
     }
@@ -210,9 +206,91 @@ func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) 
         return
     }
 
-    // Return updated full object to frontend (helps UI update immediately)
     w.Header().Set("Content-Type", "application/json")
     if err := json.NewEncoder(w).Encode(book); err != nil {
         log.Println("encode response err:", err)
+    }
+}
+
+func (h *BookHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    idUserStr := vars["id"]
+    idUserInt, err := strconv.Atoi(idUserStr)
+    if err != nil {
+        log.Println(err)
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+
+    type addFavReq struct {
+        BookID uint `json:"book_id"`
+    }
+
+    var req addFavReq
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid body", http.StatusBadRequest)
+        return
+    }
+
+    if err := h.repo.AddFavorite(uint(idUserInt), uint(req.BookID)); err != nil {
+        http.Error(w, "Failed to add favorite", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte(`{"ok":true}`))
+}
+
+func (h *BookHandler) DeleteFavoriteHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+
+    idUserStr := vars["user_id"]
+    idUserInt, err := strconv.Atoi(idUserStr)
+    if err != nil {
+        log.Println(err)
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+
+    idBookStr := vars["book_id"]
+    idBookInt, err := strconv.Atoi(idBookStr)
+        if err != nil {
+        log.Println(err)
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+
+    err = h.repo.DeleteFavorite(uint(idUserInt), uint(idBookInt))
+    if err != nil {
+        log.Printf("DeleteFavorite error: %v\n", err)
+        http.Error(w, "internal server error", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *BookHandler) GetAllFavotiteHandler(w http.ResponseWriter, r *http.Request) {
+     vars := mux.Vars(r)
+
+    idUserStr := vars["user_id"]
+    idUserInt, err := strconv.Atoi(idUserStr)
+    if err != nil {
+        log.Println(err)
+        http.Error(w, "Invalid ID", http.StatusBadRequest)
+        return
+    }
+
+    if err != nil {
+        log.Printf("GetAllFavorite failed for user %d: %v\n", idUserInt, err)
+        http.Error(w, "Failed to load favorites", http.StatusInternalServerError)
+        return
+    }
+    
+    books, err := h.repo.GetAllFavorite(uint(idUserInt))
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    if err := json.NewEncoder(w).Encode(books); err != nil {
+        log.Printf("encode favorites response failed: %v", err)
     }
 }

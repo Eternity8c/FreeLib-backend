@@ -5,6 +5,7 @@ import (
 	"FreeLib/internal/repository"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -50,7 +51,8 @@ func (r *bookRepository) GetAll() ([]models.Book, error) {
 }
 
 func (r *bookRepository) GetByID(id uint) (*models.Book, error) {
-	query := `SELECT * FROM books WHERE id = $1;`
+	query := `SELECT id, title, author, description, genre, content, cover_url, created_at
+	 FROM books WHERE id = $1;`
 	var book models.Book
 	err := r.pool.QueryRow(context.Background(),
 	query, id).Scan(
@@ -99,9 +101,20 @@ func (r *bookRepository) Create(book *models.Book) error {
 }
 
 func (r *bookRepository) Search(s string) ([]models.Book, error) {
-	query := `SELECT * FROM books 
-	WHERE title = $1 OR author = $2 OR genre = $3`
-	rows, err := r.pool.Query(context.Background(), query, s)
+    s = strings.TrimSpace(s)
+    if s == "" {
+        return []models.Book{}, nil
+    }
+    pattern := "%" + s + "%"
+
+    query := `
+      SELECT id, title, author, description, genre, content, cover_url, created_at
+      FROM books
+      WHERE title ILIKE $1 OR author ILIKE $2 OR genre ILIKE $3
+      ORDER BY title
+    `
+    rows, err := r.pool.Query(context.Background(), query, pattern, pattern, pattern)
+	
 	if err != nil {
 		return nil, err
 	}
@@ -172,4 +185,62 @@ func (r *bookRepository) Update(book *models.Book) error {
 	}
 
 	return nil
+}
+
+func (r *bookRepository) AddFavorite(userID uint, bookID uint) error {
+	query := `INSERT INTO favorite_books (user_id, book_id)
+	VALUES ($1, $2)`
+
+	_, err := r.pool.Exec(context.Background(), query,
+		userID,	
+		bookID,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *bookRepository) DeleteFavorite(userID uint, bookID uint) error {
+	query := `DELETE FROM favorite_books WHERE user_id = $1 AND book_id = $2`
+	_, err := r.pool.Exec(context.Background(), query, userID, bookID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *bookRepository) GetAllFavorite(userID uint) ([]models.Book, error) {
+    query := `SELECT book_id FROM favorite_books WHERE user_id = $1`
+
+    rows, err := r.pool.Query(context.Background(), query, userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var books []models.Book
+    for rows.Next() {
+        var bookId int64
+        if err := rows.Scan(&bookId); err != nil {
+            return nil, err
+        }
+
+        book, err := r.GetByID(uint(bookId))
+        if err != nil {
+            return nil, err
+        }
+
+        books = append(books, *book)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return books, nil
 }
