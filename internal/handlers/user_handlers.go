@@ -21,10 +21,13 @@ func NewUserHandler(repo repository.UserRepository) *UserHandler {
 }
 
 func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("RegisterHandler called from=%s", r.RemoteAddr)
+
 	var req models.RegisteRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		log.Printf("RegisterHandler: invalid JSON from=%s err=%v", r.RemoteAddr, err)
 		return
 	}
 
@@ -47,6 +50,8 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("User registered id=%d username=%s email=%s", user.ID, user.Username, user.Email)
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{} {
@@ -84,4 +89,6 @@ func (h *UserHandler) AuntificationHandler(w http.ResponseWriter, r *http.Reques
 			"isAdmin": user.IsAdmin,
 		},
 	})
+
+	log.Printf("User authenticated id=%d email=%s", user.ID, user.Email)
 }

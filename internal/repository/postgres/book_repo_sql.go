@@ -5,7 +5,6 @@ import (
 	"FreeLib/internal/repository"
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -98,51 +97,6 @@ func (r *bookRepository) Create(book *models.Book) error {
 	}
 
 	return nil
-}
-
-func (r *bookRepository) Search(s string) ([]models.Book, error) {
-    s = strings.TrimSpace(s)
-    if s == "" {
-        return []models.Book{}, nil
-    }
-    pattern := "%" + s + "%"
-
-    query := `
-      SELECT id, title, author, description, genre, content, cover_url, created_at
-      FROM books
-      WHERE title ILIKE $1 OR author ILIKE $2 OR genre ILIKE $3
-      ORDER BY title
-    `
-    rows, err := r.pool.Query(context.Background(), query, pattern, pattern, pattern)
-	
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var books []models.Book
-	for rows.Next() {
-		var book models.Book
-		err := rows.Scan(
-			&book.ID,
-			&book.Title,
-			&book.Author,
-			&book.Description,
-			&book.Genre,
-			&book.Content,
-			&book.CoverURL,
-			&book.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		books = append(books, book)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return books, nil
 }
 
 func (r *bookRepository) Delete(id uint) error {

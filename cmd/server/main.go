@@ -36,7 +36,6 @@ func main() {
 	r.HandleFunc("/api/health", bookHandler.HealthHandler).Methods("GET")
 	r.HandleFunc("/api/books", bookHandler.GetBooksHandler).Methods("GET")
 	r.HandleFunc("/api/book", bookHandler.GetByIDHandler).Methods("GET")
-	r.HandleFunc("/api/search", bookHandler.SearchHandler).Methods("GET")
 	r.HandleFunc("/api/create", bookHandler.CreateHandler).Methods("POST")
 	r.HandleFunc("/api/book", bookHandler.DeleteHandler).Methods("DELETE")
 	r.HandleFunc("/api/book/{id}", bookHandler.UpdateBookHandler).Methods("PATCH")

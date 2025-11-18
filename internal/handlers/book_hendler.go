@@ -34,86 +34,79 @@ func (h *BookHandler) HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BookHandler) GetBooksHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GetBooksHandler called from=%s", r.RemoteAddr)
 	books, err := h.repo.GetAll()
 	if err != nil {
-		log.Println(err)
+		log.Println("GetBooksHandler: repo error:", err)
 	}
 
 	w.Header().Set("Content-type", "application/json")
 	json.NewEncoder(w).Encode(books)
+	log.Printf("GetBooksHandler done count=%d", len(books))
 }
 
 func (h *BookHandler) GetByIDHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GetByIDHandler called from=%s", r.RemoteAddr)
 	idStr := r.URL.Query().Get("id")
 
 	idUint, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Println(err)
+		log.Println("GetByIDHandler: invalid id:", err)
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
-	log.Println(uint(idUint))
 	book, err := h.repo.GetByID(uint(idUint))
-	
 	if err != nil {
-		log.Println(err)
+		log.Println("GetByIDHandler: repo error:", err)
 		http.Error(w, "Book not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-type", "application/json")
 	json.NewEncoder(w).Encode(book)
-}
-
-func (h *BookHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
-
-	books, err := h.repo.Search(query)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Books not found", http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-type", "application/json")
-	json.NewEncoder(w).Encode(books)
+	log.Printf("GetByIDHandler done id=%d title=%q author=%q", idUint, book.Title, book.Author)
 }
 
 func (h *BookHandler) CreateHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("CreateHandler called from=%s", r.RemoteAddr)
 	var book models.Book
 	err := json.NewDecoder(r.Body).Decode(&book)
 	if err != nil {
-		log.Println(err)
+		log.Println("CreateHandler: invalid JSON:", err)
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.repo.Create(&book); err != nil {
-		log.Println(err)
+		log.Println("CreateHandler: repo error:", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(book)
+
+	log.Printf("Book created id=%d", book.ID)
 }
 
 func (h *BookHandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("DeleteHandler called from=%s", r.RemoteAddr)
 	strID := r.URL.Query().Get("id")
 	intId, err := strconv.Atoi(strID)
 	if err != nil {
-		log.Println(err)
+		log.Println("DeleteHandler: invalid id:", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := h.repo.Delete(uint(intId)); err != nil {
-		log.Println(err)
+		log.Println("DeleteHandler: repo error:", err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+	log.Printf("Book deleted id=%d", intId)
 }
 
 func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) {
@@ -152,10 +145,6 @@ func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) 
     }
 
     r.Body = io.NopCloser(bytes.NewReader(body))
-
-
-    log.Printf("PATCH /api/book/%d body: %s\n", id, string(body))
-
 
     var rawMap map[string]interface{}
     if err := json.Unmarshal(body, &rawMap); err != nil {
@@ -210,6 +199,8 @@ func (h *BookHandler) UpdateBookHandler(w http.ResponseWriter, r *http.Request) 
     if err := json.NewEncoder(w).Encode(book); err != nil {
         log.Println("encode response err:", err)
     }
+
+    log.Printf("Book updated id=%d", book.ID)
 }
 
 func (h *BookHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Request) {
@@ -239,6 +230,7 @@ func (h *BookHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Request)
 
     w.WriteHeader(http.StatusOK)
     w.Write([]byte(`{"ok":true}`))
+    log.Printf("Favorite added user_id=%v book_id=%v from=%s", idUserInt, req.BookID, r.RemoteAddr)
 }
 
 func (h *BookHandler) DeleteFavoriteHandler(w http.ResponseWriter, r *http.Request) {
@@ -268,6 +260,7 @@ func (h *BookHandler) DeleteFavoriteHandler(w http.ResponseWriter, r *http.Reque
     }
 
     w.WriteHeader(http.StatusNoContent)
+    log.Printf("Favorite removed user_id=%v book_id=%v from=%s", idUserInt, idBookInt, r.RemoteAddr)
 }
 
 func (h *BookHandler) GetAllFavotiteHandler(w http.ResponseWriter, r *http.Request) {
@@ -293,4 +286,5 @@ func (h *BookHandler) GetAllFavotiteHandler(w http.ResponseWriter, r *http.Reque
     if err := json.NewEncoder(w).Encode(books); err != nil {
         log.Printf("encode favorites response failed: %v", err)
     }
+    log.Printf("Favorites returned user_id=%v count=%d from=%s", idUserInt, len(books), r.RemoteAddr)
 }
