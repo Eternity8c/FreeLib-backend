@@ -11,17 +11,25 @@ type MockUserRepository struct {
 
 func NewMockUserRepository() *MockUserRepository {
 	return &MockUserRepository{
-		users: []models.User{},
+		users: []models.User{
+			{
+				ID: 1,
+				Username: "test1",
+				Email: "test1@gmail.com",
+				IsAdmin: false,
+				PasswordHash: "12345678",
+			},
+		},
 	}
 }
 
 func (m *MockUserRepository) CreateUser(user *models.User) error {
 	for _, u := range m.users {
 		if u.Email == user.Email {
-			return errors.New("User с таким email существует")
+			return errors.New("user with such an email already exists")
 		}
 		if u.Username == user.Username {
-			return errors.New("User с таким именем существует")
+			return errors.New("user with such an username already exists")
 		} 
 	}
 

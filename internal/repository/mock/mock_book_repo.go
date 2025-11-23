@@ -2,111 +2,105 @@ package mock
 
 import (
 	"FreeLib/internal/models"
+	"FreeLib/internal/repository"
 	"errors"
 	"time"
 )
 
-type MockBookRepo struct {}
+type MockBookRepo struct {
+	Books []models.Book
+}
 
-var mockBooks = []models.Book {
-	{
-		ID: 1,
-		Title: "Мастер и Маргарита",
-		Author: "M.А. Булгаков",
-		Description: "Роман о дьяволе, посетившем Москву 1930-х годов",
-		CreatedAt: time.Now(),
-	},
-		{
-		ID: 2,
-		Title: "Преступление и наказание",
-		Author: "Ф.М. Достоевский",
-		Description: "Психологическая драма о студенте, совершившем убийство",
-		CreatedAt: time.Now(),
-	},
-	{
-		ID: 3,
-		Title: "Война и мир",
-		Author: "Л.Н. Толстой",
-		Description: "Эпопея о жизни русского общества во время войны с Наполеоном",
-		CreatedAt: time.Now(),
-	},
-	{
-		ID: 4,
-		Title: "Отцы и дети",
-		Author: "И.С. Тургенев",
-		Description: "Роман о конфликте поколений и нигилизме",
-		CreatedAt: time.Now(),
-	},
-	{
-		ID: 5,
-		Title: "Мёртвые души",
-		Author: "Н.В. Гоголь",
-		Description: "Поэма о афере с покупкой умерших крестьян",
-		CreatedAt: time.Now(),
-	},
-	{
-		ID: 6,
-		Title: "Анна Каренина",
-		Author: "Л.Н. Толстой",
-		Description: "Трагическая история любви замужней женщины",
-		CreatedAt: time.Now(),
-	},
+func NewMockBookRepo() repository.BookRepository {
+	return &MockBookRepo {
+		Books: []models.Book{},
+	}
 }
 
 func (m *MockBookRepo) GetAll() ([]models.Book, error) {
-	return mockBooks ,nil
+	return m.Books ,nil
 }
 
 func (m *MockBookRepo) GetByID(id uint) (*models.Book, error) {
-	for i := 0; i < len(mockBooks); i++ {
-		if mockBooks[i].ID == id {
-			return &mockBooks[i], nil
+	for i := 0; i < len(m.Books); i++ {
+		if m.Books[i].ID == id {
+			return &m.Books[i], nil
 		}
 	}
-	return nil, errors.New("Не найден нужный ID")
+	return nil, errors.New("ID not fount")
 }
 
 func (m *MockBookRepo) Search(query string) ([]models.Book, error) {
-	var books []models.Book
-	for i := 0; i < len(mockBooks); i++ {
-		if mockBooks[i].Author == query || mockBooks[i].Title == query {
-			books = append(books, mockBooks[i])
+	var Books []models.Book
+	for i := 0; i < len(m.Books); i++ {
+		if m.Books[i].Author == query || m.Books[i].Title == query {
+			Books = append(Books, m.Books[i])
 		}
 	}
 
-	if len(books) == 0 {
-		return nil, errors.New("Не удалось найти книгу по заданным параметрам")
+	if len(Books) == 0 {
+		return nil, errors.New("book not found")
 	}
 
-	return books, nil
+	return Books, nil
 }
 
+func (m *MockBookRepo) Update(book *models.Book) error {
+	for i, mockBook := range m.Books {
+		if mockBook.ID == book.ID {
+			m.Books[i] = *book
+		}
+	}
+	return errors.New("book not found")
+}
 
 func (m *MockBookRepo) Create(book *models.Book) error {
 	maxID := uint(0);
-	for _, b := range mockBooks {
+	for _, b := range m.Books {
 		if b.ID > maxID {
 			maxID = b.ID
 		}
 	}
-	for i := 0; i < len(mockBooks); i++ {
-		if mockBooks[i].Author == book.Author && 
-		mockBooks[i].Title == book.Title {
-			return errors.New("Такая книга уже есть")
+	for i := 0; i < len(m.Books); i++ {
+		if m.Books[i].Author == book.Author && 
+		m.Books[i].Title == book.Title {
+			return errors.New("book already exists")
 		}
 	}
 	book.ID = maxID + 1
 	book.CreatedAt = time.Now()
-	mockBooks = append(mockBooks, *book)
+	m.Books = append(m.Books, *book)
 	return nil
 }
 
 func (m *MockBookRepo) Delete(id uint) error {
-	for i := 0; i < len(mockBooks); i++ {
-		if id == mockBooks[i].ID {
-			mockBooks = append(mockBooks[:i], mockBooks[i+1:]...)
+	for i := 0; i < len(m.Books); i++ {
+		if id == m.Books[i].ID {
+			m.Books = append(m.Books[:i], m.Books[i+1:]...)
 			return nil
 		}
 	}
-	return errors.New("ID не найден")
+	return errors.New("ID not found")
+}
+
+func (m *MockBookRepo) AddFavorite(userID uint, bookID uint) error {
+	if userID == 0 {
+		return errors.New("userID cannot be zero")
+	}
+	
+	for _, book := range m.Books {
+		if book.ID == bookID {
+			return nil
+		}
+	}
+
+	return errors.New("bookID not found")
+}
+
+func (m *MockBookRepo)	DeleteFavorite(userID uint, bookID uint) error {
+	return nil
+}
+
+func (m *MockBookRepo)	GetAllFavorite(userID uint) ([]models.Book, error) {
+	return nil, nil
 }

@@ -5,6 +5,7 @@ import (
 	"FreeLib/internal/repository"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -72,32 +73,21 @@ func (r *bookRepository) GetByID(id uint) (*models.Book, error) {
 }
 
 func (r *bookRepository) Create(book *models.Book) error {
-	query := `INSERT INTO books(
-		title,
-		author,
-		description,
-		genre,
-		content,
-		cover_URL,
-		created_At) 
-		VALUES($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, created_at`
-	err := r.pool.QueryRow(context.Background(), query,
-		book.Title,
-		book.Author,
-		book.Description,
-		book.Genre,
-		book.Content,
-		book.CoverURL,
-		book.CreatedAt,
-	).Scan(&book.ID, &book.CreatedAt)
-
+	ctx := context.Background()
+	var createdAt time.Time
+	err := r.pool.QueryRow(ctx, `
+		INSERT INTO books (title, author, description, genre, content, cover_url)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, created_at
+	`, book.Title, book.Author, book.Description, book.Genre, book.Content, book.CoverURL).Scan(&book.ID, &createdAt)
 	if err != nil {
 		return err
 	}
-
+	t := createdAt.UTC()
+	book.CreatedAt = t
 	return nil
 }
+
 
 func (r *bookRepository) Delete(id uint) error {
 	query := `DELETE FROM books WHERE id = $1`
