@@ -21,7 +21,7 @@ func main() {
 	}
 	defer pool.Close()
 	log.Println("Connect db")
-	
+
 	bookRepo := postgres.NewBookRepository(pool)
 
 	bookHandler := handlers.NewBookHandler(bookRepo)
@@ -42,12 +42,11 @@ func main() {
 	r.HandleFunc("/api/users/{id}/favorites", bookHandler.AddFavoriteHandler).Methods("POST")
 	r.HandleFunc("/api/users/{user_id}/favorites/book/{book_id}", bookHandler.DeleteFavoriteHandler).Methods("DELETE")
 	r.HandleFunc("/api/users/{user_id}/favorites", bookHandler.GetAllFavotiteHandler).Methods("GET")
-	
+
 	//User Handlers
 	r.HandleFunc("/api/register", userHandler.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/login", userHandler.AuntificationHandler).Methods("POST")
 
-	// Наконец, оборачиваем маршрутизатор CORS-ом
 	handler := withCORS(r)
 
 	log.Println("FreeLib server starting on :8080")
@@ -56,14 +55,14 @@ func main() {
 }
 
 func withCORS(next http.Handler) http.Handler {
-  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-    w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    if r.Method == http.MethodOptions {
-      w.WriteHeader(http.StatusOK)
-      return
-    }
-    next.ServeHTTP(w, r)
-  })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

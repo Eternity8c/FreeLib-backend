@@ -17,7 +17,7 @@ type UserHandler struct {
 func NewUserHandler(repo repository.UserRepository) *UserHandler {
 	return &UserHandler{
 		repo: repo,
- 	}
+	}
 }
 
 func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,9 +38,9 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := models.User {
-		Username: req.Username,
-		Email: req.Email,
+	user := models.User{
+		Username:     req.Username,
+		Email:        req.Email,
 		PasswordHash: string(passwordHash),
 	}
 
@@ -54,11 +54,11 @@ func (h *UserHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("User registered id=%d username=%s email=%s", user.ID, user.Username, user.Email)
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{} {
-		"id": user.ID,
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":       user.ID,
 		"username": user.Username,
-		"email": user.Email,
-		"message": "User registred successfully",
+		"email":    user.Email,
+		"message":  "User registred successfully",
 	})
 }
 
@@ -83,10 +83,10 @@ func (h *UserHandler) AuntificationHandler(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"user": map[string]interface{}{
-			"id": user.ID,
+			"id":       user.ID,
 			"username": user.Username,
-			"email": user.Email,
-			"isAdmin": user.IsAdmin,
+			"email":    user.Email,
+			"isAdmin":  user.IsAdmin,
 		},
 	})
 

@@ -55,15 +55,15 @@ func (r *bookRepository) GetByID(id uint) (*models.Book, error) {
 	 FROM books WHERE id = $1;`
 	var book models.Book
 	err := r.pool.QueryRow(context.Background(),
-	query, id).Scan(
-			&book.ID,
-			&book.Title,
-			&book.Author,
-			&book.Description,
-			&book.Genre,
-			&book.Content,
-			&book.CoverURL,
-			&book.CreatedAt,
+		query, id).Scan(
+		&book.ID,
+		&book.Title,
+		&book.Author,
+		&book.Description,
+		&book.Genre,
+		&book.Content,
+		&book.CoverURL,
+		&book.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,6 @@ func (r *bookRepository) Create(book *models.Book) error {
 	return nil
 }
 
-
 func (r *bookRepository) Delete(id uint) error {
 	query := `DELETE FROM books WHERE id = $1`
 	result, err := r.pool.Exec(context.Background(), query, id)
@@ -109,15 +108,15 @@ func (r *bookRepository) Update(book *models.Book) error {
 	query := `UPDATE books
 	SET title = $1, author = $2, description = $3, genre = $4, content = $5, cover_url = $6
 	WHERE id = $7`
-	
-	result, err := r.pool.Exec(context.Background(), query, 
-	book.Title,
-	book.Author,
-	book.Description,
-	book.Genre,
-	book.Content,
-	book.CoverURL,
-	book.ID)
+
+	result, err := r.pool.Exec(context.Background(), query,
+		book.Title,
+		book.Author,
+		book.Description,
+		book.Genre,
+		book.Content,
+		book.CoverURL,
+		book.ID)
 
 	if err != nil {
 		return err
@@ -125,7 +124,7 @@ func (r *bookRepository) Update(book *models.Book) error {
 
 	rowsAffected := result.RowsAffected()
 	if rowsAffected == 0 {
-    	return fmt.Errorf("book with id %d not found", book.ID)
+		return fmt.Errorf("book with id %d not found", book.ID)
 	}
 
 	return nil
@@ -136,7 +135,7 @@ func (r *bookRepository) AddFavorite(userID uint, bookID uint) error {
 	VALUES ($1, $2)`
 
 	_, err := r.pool.Exec(context.Background(), query,
-		userID,	
+		userID,
 		bookID,
 	)
 
@@ -159,32 +158,32 @@ func (r *bookRepository) DeleteFavorite(userID uint, bookID uint) error {
 }
 
 func (r *bookRepository) GetAllFavorite(userID uint) ([]models.Book, error) {
-    query := `SELECT book_id FROM favorite_books WHERE user_id = $1`
+	query := `SELECT book_id FROM favorite_books WHERE user_id = $1`
 
-    rows, err := r.pool.Query(context.Background(), query, userID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := r.pool.Query(context.Background(), query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var books []models.Book
-    for rows.Next() {
-        var bookId int64
-        if err := rows.Scan(&bookId); err != nil {
-            return nil, err
-        }
+	var books []models.Book
+	for rows.Next() {
+		var bookId int64
+		if err := rows.Scan(&bookId); err != nil {
+			return nil, err
+		}
 
-        book, err := r.GetByID(uint(bookId))
-        if err != nil {
-            return nil, err
-        }
+		book, err := r.GetByID(uint(bookId))
+		if err != nil {
+			return nil, err
+		}
 
-        books = append(books, *book)
-    }
+		books = append(books, *book)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return books, nil
+	return books, nil
 }
