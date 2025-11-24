@@ -21,3 +21,15 @@ func LoadConfig() Config {
 		MaxAttempts: 5,
 	}
 }
+
+func LoadConfigTest() Config {
+	return Config{
+		Host:        "localhost",
+		Port:        "5432",
+		Username:    "postgres",
+		Password:    "test",
+		DBname:      "testdb",
+		SSLMode:     "disable",
+		MaxAttempts: 5,
+	}
+}

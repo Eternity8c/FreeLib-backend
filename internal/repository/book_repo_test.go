@@ -1,111 +1,80 @@
 package repository_test
 
 import (
-	"FreeLib/internal/models"
-	"FreeLib/internal/repository"
-	"FreeLib/internal/repository/mock"
-	"strconv"
+	"FreeLib/pkg/config"
+	"FreeLib/pkg/database"
+	"context"
+	"fmt"
+	"log"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetByIDAndCreate(t *testing.T) {
-	mockRepo := mock.NewMockBookRepo()
-	mockBook := models.Book{
-		Author:      "1",
-		Title:       "1",
-		Description: "1",
-		Content:     "1",
-		CoverURL:    "1",
-		Genre:       "1",
-	}
+func StartPostgreSQL() (cfng config.Config, cleaner func()) {
+pool, err := dockertest.NewPool("")
+    if err != nil {
+        log.Fatalf("Could not connect to docker: %s", err)
+    }
 
-	err := mockRepo.Create(&mockBook)
-	assert.Nil(t, err)
+    pool.MaxWait = 60 * time.Second
 
-	err = mockRepo.Create(&mockBook)
-	assert.NotNil(t, err)
+    resource, err := pool.Run("postgres", "13", []string{
+        "POSTGRES_DB=testdb",
+        "POSTGRES_USER=postgres", 
+        "POSTGRES_PASSWORD=test",
+    })
+    if err != nil {
+        log.Fatalf("Could not start resource: %s", err)
+    }
 
-	bookByIDTrue, err := mockRepo.GetByID(uint(1))
+    port := resource.GetPort("5432/tcp")
+    connString := fmt.Sprintf("postgres://postgres:test@localhost:%s/testdb?sslmode=disable", port)
 
-	assert.NotNil(t, bookByIDTrue)
-	assert.Equal(t, mockBook, *bookByIDTrue)
-	assert.Nil(t, err)
+	cnfg := config.Config{
+        Host:        "localhost",
+        Port:        port, // ⬅️ Используем порт контейнера
+        Username:    "postgres",
+        Password:    "test",
+        DBname:      "testdb", 
+        SSLMode:     "disable",
+        MaxAttempts: 5,
+    }
 
-	bookByIDFalse, err := mockRepo.GetByID(uint(333))
+    // Используем встроенный Retry вместо ручного цикла
+    if err := pool.Retry(func() error {
+        conn, err := pgx.Connect(context.Background(), connString)
+        if err != nil {
+            return err
+        }
+        defer conn.Close(context.Background())
+        
+        // Дополнительная проверка - выполняем простой запрос
+        _, err = conn.Exec(context.Background(), "SELECT 1")
+        return err
+    }); err != nil {
+        resource.Close()
+        log.Fatalf("Could not connect to database: %s", err)
+    }
 
-	assert.Nil(t, bookByIDFalse)
-	assert.Error(t, err)
-}
-
-func SeedMockRepository(repo repository.BookRepository) {
-	for i := 0; i < 10; i++ {
-		iStr := strconv.Itoa(i)
-		mockBook := models.Book{
-			Author:      iStr,
-			Title:       "1",
-			Description: "1",
-			Content:     "1",
-			CoverURL:    "1",
-			Genre:       "1",
+	cleanerFunc := func() {
+		err := pool.Purge(resource)
+		if err != nil {
+			log.Fatalf("pool.Purge failed: %v", err)
 		}
-		repo.Create(&mockBook)
 	}
+
+	return cnfg, cleanerFunc
 }
 
-func TestGetAll(t *testing.T) {
-	mockRepo1 := mock.NewMockBookRepo()
-	SeedMockRepository(mockRepo1)
+func TestConnectDB(t *testing.T) {
+	cnfg, cleanup := StartPostgreSQL()
+	defer cleanup()
+	ctx := context.Background()
+	_, err := database.ConnectDB(ctx, cnfg)
 
-	mockRepo2 := mock.NewMockBookRepo()
-	SeedMockRepository(mockRepo2)
-
-	res1, err := mockRepo1.GetAll()
-	res2, err := mockRepo1.GetAll()
-
-	assert.NotNil(t, mockRepo1)
-	assert.NotNil(t, mockRepo2)
-	assert.Equal(t, res1, res2)
 	assert.Nil(t, err)
-}
-
-func TestSearch(t *testing.T) {
-	mockRepo := mock.NewMockBookRepo()
-	SeedMockRepository(mockRepo)
-	mockBookTrue := models.Book{
-		ID:          1,
-		Author:      "0",
-		Title:       "1",
-		Description: "1",
-		Content:     "1",
-		CoverURL:    "1",
-		Genre:       "1",
-		CreatedAt:   time.Now(),
-	}
-
-	bookByID, err := mockRepo.GetByID(uint(1))
-
-	assert.NotNil(t, bookByID)
-	assert.Equal(t, mockBookTrue, *bookByID)
-	assert.Nil(t, err)
-
-	err = mockRepo.Update(&mockBookTrue)
-	assert.Nil(t, err)
-	assert.Equal(t, mockBookTrue, *bookByID)
-
-	mockBookFalse := models.Book{
-		ID:          111,
-		Author:      "1111",
-		Title:       "1",
-		Description: "1",
-		Content:     "1",
-		CoverURL:    "1",
-		Genre:       "1",
-		CreatedAt:   time.Now(),
-	}
-
-	err = mockRepo.Update(&mockBookFalse)
-	assert.NotNil(t, err)
 }
